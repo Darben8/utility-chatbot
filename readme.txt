@@ -1,5 +1,6 @@
 Input your API secrets for OpenAI, Pinecone and Openei in the secret.py file 
 Sign up for openei API key here: https://openei.org/services/
+This version of the code does not require openei api key since the utility rate dataset was downloaded as a CSV
 
 You do not need to create an index in the pinecone GUI (the code creates one)
 
