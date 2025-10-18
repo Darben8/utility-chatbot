@@ -1,0 +1,8 @@
+season,period,start_hour,end_hour,rate,description
+summer,on-peak,14,19,0.298,Peak hours (2 PM–7 PM) when demand is highest
+summer,off-peak,6,14,0.076,Moderate demand hours
+summer,super-off-peak,23,6,0.05,Cheapest hours overnight
+winter,on-peak,7,11,0.2,Morning peak (7–11 AM)
+winter,on-peak,18,22,0.15,Evening peak (6–10 PM)
+winter,off-peak,6,7,0.081,Midday hours except peaks
+winter,super-off-peak,23,6,0.06,Overnight super off-peak
