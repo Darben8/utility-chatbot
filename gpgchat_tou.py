@@ -16,7 +16,7 @@ os.environ["PINECONE_API_KEY"] = pineconeapi_key
 client = OpenAI(api_key=openapi_key)
 MODEL = "text-embedding-3-large"
 
-# --- Initial embedding to get dimension ---
+# ------ Initial embedding to get dimension ------
 res = client.embeddings.create(
     input=["Sample document text", "there will be several phrases in each batch"],
     model=MODEL
@@ -43,9 +43,7 @@ index = pc.Index(index_name)
 MEMORY_FILE = "user_memory.json"
 
 
-# ============================================================
-#                    USER MEMORY HANDLERS
-# ============================================================
+# ------------ User memory handlers --------------
 def load_memory():
     if os.path.exists(MEMORY_FILE):
         with open(MEMORY_FILE, "r") as f:
@@ -56,10 +54,8 @@ def save_memory(memory):
     with open(MEMORY_FILE, "w") as f:
         json.dump(memory, f, indent=2)
 
-# ============================================================
-#                    EMBEDDING HELPERS
-# ============================================================
 
+# -------------- Embedding helpers ---------------
 def get_embedding_safe(text):
     try:
         embedding = client.embeddings.create(input=[text], model=MODEL).data[0].embedding
@@ -152,9 +148,8 @@ def ingest_tou_csv(csv_path="enter here", namespace=tou_namespace, batch_size=10
 
     print(f"✅ Ingested {count} TOU rows into Pinecone namespace '{namespace}'")
 
-# ============================================================
-#                    RAG RETRIEVAL
-# ============================================================
+
+# ---------------- RAG Retrieval --------------------
 def retrieve_info(query, top_k=3, namespace=utility_namespace):
     """Generic Pinecone retrieval for any namespace."""
     embedding = get_embedding_safe(query)
@@ -175,9 +170,8 @@ def retrieve_utility_info(query, top_k=3):
     """Retrieve utility rate info."""
     return retrieve_info(query, top_k=top_k, namespace=utility_namespace)
 
-# ============================================================
-#                    BILL CALCULATIONS
-# ============================================================
+
+# --------------------- BILL CALCULATIONS ----------------------
 def estimate_usage_from_bill(old_bill, avg_rate=0.15):
     try:
         return float(old_bill) / float(avg_rate)
@@ -199,9 +193,8 @@ def estimate_new_bill(consumption_kwh, retrieved_rows):
     new_bill = consumption_kwh * rate
     return new_bill, rate, fixed
 
-# ============================================================
-#                    GPT TIP GENERATION AND INTERACTION
-# ============================================================
+
+#----------------------- GPT 4o TIP GENERATION AND INTERACTION -----------------
 def generate_combined_gpt_tips(user_input, old_bill=None, new_bill=None, usage_kwh=None):
     """Generate response using both utility & TOU retrieval."""
     keywords = ["tou", "peak", "off-peak", "on-peak", "time-of-use", "rate", "hour"]
@@ -287,9 +280,7 @@ User input:
 
 
 
-# ============================================================
-#                    MAIN FLOW
-# ============================================================
+#------------------- MAIN FLOW -----------------------
 def run():
     print("Welcome to the Energy Efficiency Assistant Chatbot!")
     memory = load_memory()

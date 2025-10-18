@@ -32,14 +32,14 @@ source venv/bin/activate
 3. Install dependencies listed in requirements.txt
 pip install -r requirements.txt
 
-4. Copy the path of "ga_utility_rates_iou.csv" and insert in line 75 after "csv_path="
+4. Copy the path of "ga_utility_rates_iou.csv" and insert in line 71 after "csv_path="
 
-5. Copy the path of "ga_tou_rates.csv" and insert in line 121 after csv_path="
+5. Copy the path of "ga_tou_rates.csv" and insert in line 117 after csv_path="
 
-6. If you're running the code for the first time, uncomment lines 370 and 371
-Line 370 inserts the rows from the ga_utility_rates_iou.csv as vector embeddings in the pinecone index called utilitychat-index and namespace called utility-rates-iou.
-Line 371 inserts the rows from the ga_tou_rates.csv as vector embeddings in the pinecone index called utilitychat-index and namespace called georgia-power-tou-rates.
-Run it only once! After successful run, comment it before running the code again
+6. If you're running the code for the first time, uncomment lines 361 and 362
+Line 361 inserts the rows from the ga_utility_rates_iou.csv as vector embeddings in the pinecone index called utilitychat-index and namespace called utility-rates-iou.
+Line 362 inserts the rows from the ga_tou_rates.csv as vector embeddings in the pinecone index called utilitychat-index and namespace called georgia-power-tou-rates.
+Run it only once! After successful run, comment it before running the code again. Check your pinecone indexes from the webapp to make sure.
 
 7. The code to run is gpgchat_tou.py
 
