@@ -16,7 +16,7 @@ os.environ["PINECONE_API_KEY"] = pineconeapi_key
 client = OpenAI(api_key=openapi_key)
 MODEL = "text-embedding-3-large"
 
-# ------ Initial embedding to get dimension ------
+# --------- Initial embedding to get dimension ----------
 res = client.embeddings.create(
     input=["Sample document text", "there will be several phrases in each batch"],
     model=MODEL
@@ -40,10 +40,9 @@ if index_name not in pc.list_indexes().names():
 
 index = pc.Index(index_name)
 
+
+#--------------------- USER MEMORY HANDLERS -----------------------
 MEMORY_FILE = "user_memory.json"
-
-
-# ------------ User memory handlers --------------
 def load_memory():
     if os.path.exists(MEMORY_FILE):
         with open(MEMORY_FILE, "r") as f:
@@ -55,7 +54,7 @@ def save_memory(memory):
         json.dump(memory, f, indent=2)
 
 
-# -------------- Embedding helpers ---------------
+#------------------ EMBEDDING HELPERS ---------------------
 def get_embedding_safe(text):
     try:
         embedding = client.embeddings.create(input=[text], model=MODEL).data[0].embedding
@@ -67,8 +66,8 @@ def get_embedding_safe(text):
     return embedding
 
 
-# ---------------- CSV ingestion --------------------
-def ingest_utility_csv(csv_path="enter here", namespace=utility_namespace, batch_size=100):
+# -------------------- CSV ingestion -----------------------
+def ingest_utility_csv(csv_path="insert utility_rates.csv path", namespace=utility_namespace, batch_size=100):
     #dataset for only Georgia
     """
     Ingest rows from general utility-data CSV into Pinecone index. Uses Pinecone inference to create embeddings.
@@ -114,7 +113,7 @@ def ingest_utility_csv(csv_path="enter here", namespace=utility_namespace, batch
     print(f"✅ Ingested {count} general utility data rows into Pinecone namespace '{namespace}'.")
 
 
-def ingest_tou_csv(csv_path="enter here", namespace=tou_namespace, batch_size=100):
+def ingest_tou_csv(csv_path="insert utility_tou_rates.csv here", namespace=tou_namespace, batch_size=100):
     """
     Ingest rows from TOU CSV into Pinecone index. Uses OpenAI inference to create embeddings.
     """
@@ -149,7 +148,7 @@ def ingest_tou_csv(csv_path="enter here", namespace=tou_namespace, batch_size=10
     print(f"✅ Ingested {count} TOU rows into Pinecone namespace '{namespace}'")
 
 
-# ---------------- RAG Retrieval --------------------
+# --------------------- RAG RETRIEVAL -------------------------
 def retrieve_info(query, top_k=3, namespace=utility_namespace):
     """Generic Pinecone retrieval for any namespace."""
     embedding = get_embedding_safe(query)
@@ -171,7 +170,7 @@ def retrieve_utility_info(query, top_k=3):
     return retrieve_info(query, top_k=top_k, namespace=utility_namespace)
 
 
-# --------------------- BILL CALCULATIONS ----------------------
+# --------------------- BILL CALCULATIONS -------------------------
 def estimate_usage_from_bill(old_bill, avg_rate=0.15):
     try:
         return float(old_bill) / float(avg_rate)
@@ -194,8 +193,8 @@ def estimate_new_bill(consumption_kwh, retrieved_rows):
     return new_bill, rate, fixed
 
 
-#----------------------- GPT 4o TIP GENERATION AND INTERACTION -----------------
-def generate_combined_gpt_tips(user_input, old_bill=None, new_bill=None, usage_kwh=None):
+# ------------------------- GPT TIP GENERATION AND INTERACTION -----------------
+def generate_combined_gpt_tips(user_input, old_bill=None, target_bill=None, usage_kwh=None):
     """Generate response using both utility & TOU retrieval."""
     keywords = ["tou", "peak", "off-peak", "on-peak", "time-of-use", "rate", "hour"]
 
@@ -211,7 +210,10 @@ def generate_combined_gpt_tips(user_input, old_bill=None, new_bill=None, usage_k
     season = "summer" if now.month in [5, 6, 7, 8, 9] else "winter"
 
     prompt = f"""
-You are an energy efficiency assistant helping users understand rates and save energy.
+You are an energy efficiency assistant helping users save money on energy.
+You must **only** answer energy-related questions.
+If the question is outside energy (e.g., sports, health, politics), respond with:
+"I can only answer questions related to the energy sector."
 
 Current season: {season.capitalize()}
 Current time: {now.strftime('%I:%M %p')}
@@ -222,7 +224,7 @@ Utility & TOU context:
 {combined_context}
 
 Provide 3-5 actionable energy-saving tips grounded in the retrieved data.
-If no relevant data, provide general tips. Be concise and clear.
+If no relevant data, provide general energy tips. Be concise and clear.
 """
 
     resp = client.chat.completions.create(
@@ -232,7 +234,7 @@ If no relevant data, provide general tips. Be concise and clear.
             {"role": "user", "content": prompt}
         ],
         temperature=0.2,
-        max_tokens=600
+        max_tokens=500
     )
     try:
         return resp.choices[0].message.content.strip()
@@ -240,10 +242,11 @@ If no relevant data, provide general tips. Be concise and clear.
         return resp["choices"][0]["message"]["content"].strip()
 
 
-# ---------------- Interactive chatbot -----------------
+# ------------------ Interactive chatbot -------------------
 def interactive_gpt(user_input, combined_context):
     """
     Generate a conversational response using chat memory context and user input.
+    
     Args:
         user_input (str): The user's input message.
         combined_context (str): The chat memory or context to inform the response.
@@ -255,8 +258,10 @@ You are an energy efficiency assistant. Use the following memory context:
 
     {combined_context}
 
-Based off the chat memory, respond conversationally and clearly to the user input below.
+Based off the chat memory, respond clearly to the user input below.
 If the user asks about savings or bills, provide energy usage or load-shifting advice.
+You must **only** answer energy-related questions. If the question is outside energy (e.g., sports, health, politics), respond with:
+    "I can only answer questions related to the energy sector."
 User input:
 {user_input}
 """
@@ -280,11 +285,12 @@ User input:
 
 
 
-#------------------- MAIN FLOW -----------------------
+# ----------------------- MAIN FLOW -----------------------
 def run():
     print("Welcome to the Energy Efficiency Assistant Chatbot!")
     memory = load_memory()
 
+    user_name = input(f"Enter your name [{memory.get('user_name','')}]: ") or memory.get("user_name")
     zip_code = input(f"Enter ZIP code [{memory.get('zip_code','')}]: ") or memory.get("zip_code")
     old_bill = input(f"Previous bill ($) [{memory.get('old_bill','')}]: ") or memory.get("old_bill")
     target_bill = input(f"Target bill ($) [{memory.get('target_bill','')}]: ") or memory.get("target_bill")
@@ -299,6 +305,7 @@ def run():
         return
 
     memory.update({
+        "user_name": user_name,
         "zip_code": zip_code,
         "old_bill": old_bill,
         "target_bill": target_bill,
@@ -319,13 +326,13 @@ def run():
         print("Could not estimate new bill.")
         return
 
-    reduction_needed = (1 - (float(target_bill) / float(new_bill))) * 100
+    reduction_needed = (1 - (float(target_bill) / float(old_bill))) * 100
     #tips = generate_gpt_tips(old_bill, new_bill, usage_kwh, reduction_needed, retrieved_rows, user_info)
-    tips = generate_combined_gpt_tips(user_info, old_bill, new_bill, usage_kwh)
+    tips = generate_combined_gpt_tips(user_info, old_bill, target_bill, usage_kwh)
 
-    print(f"\nEstimated new bill: ${new_bill:.2f} (Rate: ${rate:.4f}/kWh)")
+    #print(f"\nEstimated new bill: ${new_bill:.2f} (Rate: ${rate:.4f}/kWh)")
     print(f"To reach ${target_bill}, reduce or shift {reduction_needed:.1f}% of usage.\n")
-    print("💡 Personalized Energy Tips:\n")
+    print(f"💡 Personalized Energy Tips for {user_name}:\n")
     print(tips)
 
     # Record the end time
