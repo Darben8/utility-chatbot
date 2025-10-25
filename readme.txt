@@ -37,8 +37,8 @@ pip install -r requirements.txt
 5. Copy the path of "ga_tou_rates.csv" and insert in line 116 after csv_path="
 
 6. If you're running the code for the first time, uncomment lines 361 and 362
-Line 368 inserts the rows from the ga_utility_rates_iou.csv as vector embeddings in the pinecone index called utilitychat-index and namespace called utility-rates-iou.
-Line 369 inserts the rows from the ga_tou_rates.csv as vector embeddings in the pinecone index called utilitychat-index and namespace called georgia-power-tou-rates.
+Line 377 inserts the rows from the ga_utility_rates_iou.csv as vector embeddings in the pinecone index called utilitychat-index and namespace called utility-rates-iou.
+Line 378 inserts the rows from the ga_tou_rates.csv as vector embeddings in the pinecone index called utilitychat-index and namespace called georgia-power-tou-rates.
 Run it only once! After successful run, comment it before running the code again. Check your pinecone indexes from the webapp to make sure.
 
 7. To run the code with the streamlit user interface instead of command line, run the command below:

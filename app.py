@@ -1,4 +1,3 @@
-# app.py
 import streamlit as st
 from gpgchat_tou import (
     load_memory, save_memory,
@@ -107,5 +106,3 @@ if st.button("Send"):
     with open(chat_memory_file, "a") as f:
         f.write(f"You: {user_input}\nAssistant: {response}\n\n")
 
-    # Refresh sidebar chat display
-    st.rerun()

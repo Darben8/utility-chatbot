@@ -69,22 +69,19 @@ def get_embedding_safe(text):
 # -------------------- CSV ingestion -----------------------
 def ingest_utility_csv(csv_path="insert utility_rates.csv path", namespace=utility_namespace, batch_size=100):
     #dataset for only Georgia
-    """
-    Ingest rows from general utility-data CSV into Pinecone index. Uses Pinecone inference to create embeddings.
-    """
+    #Ingest rows from general utility-data CSV into Pinecone index. Uses Pinecone inference to create embeddings.
     df = pd.read_csv(csv_path, dtype=str)  # read as strings to avoid type surprises; missing values remain as NaN
     vectors = []
     count = 0
     for i, row in df.iterrows():
         print(i)
-        # Build descriptive text from your CSV columns
+        # Build descriptive text from CSV columns
         text = (
             f"Utility: {row.get('utility_name','')}, State: {row.get('state','')}, "
             f"Service Type: {row.get('service_type','')}, Ownership: {row.get('ownership','')}, "
             f"Commercial Rate: {row.get('comm_rate','')}, Industrial Rate: {row.get('ind_rate','')}, "
             f"Residential Rate: {row.get('res_rate','')}, ZIP: {row.get('zip','')}"
         )
-
         # Get embedding (document type)
         try:
             embedding = get_embedding_safe(text)
@@ -95,9 +92,7 @@ def ingest_utility_csv(csv_path="insert utility_rates.csv path", namespace=utili
         # Use a stable id — combine zip + utility_name + index for uniqueness
         safe_utility = re.sub(r"\s+", "_", row.get("utility_name", "unknown")).strip()
         item_id = f"{row.get('zip','unkzip')}_{safe_utility}_{i}"
-
         vectors.append((item_id, embedding, {"text": text}))
-
         count += 1
         # Batch upserts
         if len(vectors) >= batch_size:
@@ -194,7 +189,7 @@ def estimate_new_bill(consumption_kwh, retrieved_rows):
 
 
 # ------------------------- GPT TIP GENERATION AND INTERACTION -----------------
-def generate_combined_gpt_tips(user_input, old_bill=None, target_bill=None, usage_kwh=None):
+def generate_combined_gpt_tips(user_input):
     """Generate response using both utility & TOU retrieval."""
     keywords = ["tou", "peak", "off-peak", "on-peak", "time-of-use", "rate", "hour"]
 
@@ -253,10 +248,24 @@ def interactive_gpt(user_input, combined_context):
     Returns:
         str: The assistant's conversational reply.
     """
+    keywords = ["tou", "peak", "off-peak", "on-peak", "time-of-use", "rate", "hour"]
+
+    # retrieve from both knowledge bases
+    utility_context = retrieve_utility_info(user_input)
+    tou_context = retrieve_tou_info(user_input) if any(k in user_input.lower() for k in keywords) else []
+
+    combined_context = "\n\n---\n\n".join(utility_context + tou_context)
+    if not combined_context:
+        combined_context = "No relevant utility or TOU information found."
+
+    now = datetime.datetime.now()
+    season = "summer" if now.month in [5, 6, 7, 8, 9] else "winter"
     prompt = f"""
 You are an energy efficiency assistant. Use the following memory context:
 
     {combined_context}
+    Current season: {season.capitalize()}
+    Current time: {now.strftime('%I:%M %p')}
 
 Based off the chat memory, respond clearly to the user input below.
 If the user asks about savings or bills, provide energy usage or load-shifting advice.
